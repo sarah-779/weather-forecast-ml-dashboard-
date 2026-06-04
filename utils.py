@@ -2,12 +2,22 @@ import pandas as pd
 
 def load_data(path):
     df = pd.read_csv(path)
+
+    # clean column names
     df.columns = df.columns.str.strip().str.lower()
+
     return df
 
 
 def generate_insights(df):
     insights = []
+
+    # safety check (avoid crash if missing columns)
+    required_cols = ["temp", "humidity", "rain"]
+
+    for col in required_cols:
+        if col not in df.columns:
+            return ["Missing column: " + col]
 
     if df["temp"].mean() > 30:
         insights.append("High average temperature detected.")
@@ -21,3 +31,4 @@ def generate_insights(df):
     insights.append("Weather conditions are strongly seasonal.")
 
     return insights
+   
