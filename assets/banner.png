@@ -1,0 +1,31 @@
+from PIL import Image, ImageDraw, ImageFont
+
+# Create blank image
+img = Image.new("RGB", (1200, 300), color=(20, 60, 120))  # dark blue background
+
+draw = ImageDraw.Draw(img)
+
+# Title text
+title = "🌦️ Weather Forecast ML Dashboard"
+
+subtitle = "AI + Streamlit + Data Analytics"
+
+# Try default font (works everywhere)
+try:
+    font_title = ImageFont.truetype("arial.ttf", 50)
+    font_sub = ImageFont.truetype("arial.ttf", 28)
+except:
+    font_title = ImageFont.load_default()
+    font_sub = ImageFont.load_default()
+
+# Draw text
+draw.text((50, 80), title, fill="white", font=font_title)
+draw.text((50, 170), subtitle, fill="lightgray", font=font_sub)
+
+# Optional design element (circle accent)
+draw.ellipse((1000, 50, 1150, 200), fill=(0, 180, 255))
+
+# Save image
+img.save("assets/banner.png")
+
+print("banner.png created successfully!")
