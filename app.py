@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import joblib
+
 from utils import load_data, generate_insights
 from model import train_model
 
+# ✅ MUST BE FIRST STREAMLIT COMMAND
 st.set_page_config(page_title="Weather ML Dashboard", layout="wide")
 
 # Load data
@@ -24,11 +26,15 @@ st.sidebar.header("Weather Input")
 
 input_data = {}
 
-for col in df.drop("rain", axis=1).columns:
-    input_data[col] = st.sidebar.number_input(col)
+# safe feature input
+features = df.drop("rain", axis=1).columns
+
+for col in features:
+    input_data[col] = st.sidebar.number_input(col, value=float(df[col].mean()))
 
 input_df = pd.DataFrame([input_data])
 
+# prediction
 if st.sidebar.button("Predict Rain"):
     prediction = model.predict(input_df)[0]
 
@@ -58,7 +64,7 @@ filtered_df = df[
 # ---------------- TABS ----------------
 tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🧠 Insights"])
 
-# OVERVIEW
+# ---------------- OVERVIEW ----------------
 with tab1:
     st.subheader("Dataset Overview")
 
@@ -70,22 +76,26 @@ with tab1:
 
     st.dataframe(filtered_df.head())
 
-# CHARTS
+# ---------------- CHARTS ----------------
 with tab2:
     st.subheader("Weather Analytics")
 
-    fig1 = px.line(filtered_df, y="temp", title="Temperature Trend")
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(
+        px.line(filtered_df, y="temp", title="Temperature Trend"),
+        use_container_width=True
+    )
 
-    fig2 = px.bar(filtered_df, x="humidity", color="rain",
-                  title="Humidity vs Rain")
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(
+        px.bar(filtered_df, x="humidity", color="rain", title="Humidity vs Rain"),
+        use_container_width=True
+    )
 
-    fig3 = px.scatter(filtered_df, x="temp", y="humidity",
-                      color="rain", title="Temp vs Humidity")
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(
+        px.scatter(filtered_df, x="temp", y="humidity", color="rain", title="Temp vs Humidity"),
+        use_container_width=True
+    )
 
-# INSIGHTS
+# ---------------- INSIGHTS ----------------
 with tab3:
     st.subheader("AI Insights")
 
