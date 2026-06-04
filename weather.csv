@@ -1,0 +1,25 @@
+import pandas as pd
+import numpy as np
+
+np.random.seed(42)
+
+data_size = 500
+
+df = pd.DataFrame({
+    "temp": np.random.randint(20, 45, data_size),          # Temperature
+    "humidity": np.random.randint(30, 95, data_size),      # Humidity %
+    "wind_speed": np.random.randint(5, 25, data_size),     # Wind speed
+    "pressure": np.random.randint(1000, 1025, data_size),  # Atmospheric pressure
+})
+
+# Create target variable (RAIN or NOT RAIN)
+df["rain"] = np.where(
+    (df["humidity"] > 70) & (df["temp"] < 30),
+    1,
+    0
+)
+
+# Save CSV
+df.to_csv("weather.csv", index=False)
+
+print("weather.csv created successfully!")
