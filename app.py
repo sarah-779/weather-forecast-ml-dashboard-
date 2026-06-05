@@ -13,9 +13,8 @@ df = load_data("weather.csv")
 # normalize column names
 df.columns = df.columns.str.strip().str.lower()
 
-# ---------------- HANDLE HUMIDITY SAFELY ----------------
+# ---------------- HANDLE HUMIDITY ----------------
 humidity_col = None
-
 possible_humidity_cols = ["humidity", "hum", "humidity(%)", "rh"]
 
 for col in possible_humidity_cols:
@@ -23,9 +22,9 @@ for col in possible_humidity_cols:
         humidity_col = col
         break
 
-# if no humidity column found → create fake one
+# create synthetic humidity if missing
 if humidity_col is None:
-    st.warning("No humidity column found. Creating synthetic humidity.")
+    st.warning("No humidity column found → creating synthetic humidity")
     df["humidity"] = df.select_dtypes(include="number").mean(axis=1)
     humidity_col = "humidity"
 
@@ -41,21 +40,26 @@ except:
 # ---------------- TITLE ----------------
 st.title("🌦️ Weather ML App")
 
-# ---------------- INPUT ----------------
-features = df.drop("rain", axis=1).columns
+# ---------------- INPUT (FIXED ERROR PART) ----------------
+# ONLY numeric columns
+features = df.select_dtypes(include=["number"]).columns
+features = features.drop("rain")
 
 input_data = {}
 
 for col in features:
-    input_data[col] = st.number_input(col, float(df[col].mean()))
+    input_data[col] = st.number_input(
+        col,
+        value=float(df[col].mean())
+    )
 
 input_df = pd.DataFrame([input_data])
 
 # ---------------- PREDICT ----------------
 if st.button("Predict"):
-    pred = model.predict(input_df)[0]
+    prediction = model.predict(input_df)[0]
 
-    if pred == 1:
+    if prediction == 1:
         st.error("🌧️ Rain Expected")
     else:
         st.success("☀️ No Rain Expected")
@@ -65,3 +69,5 @@ st.subheader("Insights")
 
 for i in generate_insights(df):
     st.success(i)
+
+st.caption("✔ Clean Streamlit ML App (Error Fixed)")
