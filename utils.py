@@ -9,15 +9,17 @@ def load_data(path):
 def generate_insights(df):
     insights = []
 
-    if "temp" in df.columns and df["temp"].mean() > 30:
-        insights.append("High temperature detected 🌡️")
-    else:
-        insights.append("Normal temperature 🌤️")
+    if "temp" in df.columns:
+        if df["temp"].mean() > 30:
+            insights.append("High temperature detected 🌡️")
+        else:
+            insights.append("Normal temperature 🌤️")
 
-    if "humidity" in df.columns and df["humidity"].mean() > 70:
-        insights.append("High humidity 💧")
-    else:
-        insights.append("Normal humidity 👍")
+    if "humidity" in df.columns:
+        if df["humidity"].mean() > 70:
+            insights.append("High humidity 💧")
+        else:
+            insights.append("Normal humidity 👍")
 
     if "rain" in df.columns:
         if df["rain"].sum() > len(df) * 0.5:
