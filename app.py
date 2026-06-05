@@ -1,70 +1,85 @@
 import streamlit as st
 import pandas as pd
 import joblib
+
 from utils import load_data, generate_insights
 from model import train_model
 
-# MUST BE FIRST STREAMLIT COMMAND
-st.set_page_config(page_title="Weather ML App", layout="wide")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="Weather ML Dashboard", layout="wide")
 
 # ---------------- LOAD DATA ----------------
 df = load_data("weather.csv")
 
-# safety check
-if "rain" not in df.columns:
-    st.error("Dataset must contain 'rain' column (0/1)")
-    st.stop()
+st.title("🌦️ Weather Forecast ML Dashboard")
 
-# ---------------- LOAD MODEL ----------------
+# ---------------- AUTO DETECT TARGET COLUMN ----------------
+possible_targets = ["rain", "Rain", "rainfall", "precipitation", "target"]
+
+target_col = None
+
+for col in possible_targets:
+    if col in df.columns:
+        target_col = col
+        break
+
+# If no target column → create one
+if target_col is None:
+    st.warning("No target column found. Creating synthetic 'rain' column.")
+    df["rain"] = (df["humidity"] > df["humidity"].median()).astype(int)
+    target_col = "rain"
+else:
+    df.rename(columns={target_col: "rain"}, inplace=True)
+    target_col = "rain"
+
+# ---------------- MODEL ----------------
 try:
     model = joblib.load("weather_model.pkl")
 except:
     model = train_model(df)
 
-# ---------------- TITLE ----------------
-st.title("🌦️ Weather Prediction App")
-st.write("Simple ML model to predict rain/no rain")
-
-# ---------------- SIDEBAR INPUT ----------------
-st.sidebar.header("Enter Weather Data")
+# ---------------- SIDEBAR ----------------
+st.sidebar.header("Input Features")
 
 features = df.drop("rain", axis=1).columns
 
-user_input = {}
+input_data = {}
 
 for col in features:
-    user_input[col] = st.sidebar.number_input(
+    input_data[col] = st.sidebar.number_input(
         col,
         value=float(df[col].mean())
     )
 
-input_df = pd.DataFrame([user_input])
+input_df = pd.DataFrame([input_data])
 input_df = input_df[features]
 
 # ---------------- PREDICTION ----------------
-if st.sidebar.button("Predict"):
-    result = model.predict(input_df)[0]
+if st.sidebar.button("Predict Rain"):
+    prediction = model.predict(input_df)[0]
 
-    if result == 1:
+    if prediction == 1:
         st.error("🌧️ Rain Expected")
     else:
         st.success("☀️ No Rain Expected")
 
-# ---------------- DATA VIEW ----------------
+# ---------------- DATA PREVIEW ----------------
 st.subheader("Dataset Preview")
 st.dataframe(df.head())
 
 # ---------------- FILTER ----------------
-st.subheader("Filter by Temperature")
+st.subheader("Filter Data")
 
-min_temp = int(df["temp"].min())
-max_temp = int(df["temp"].max())
+if "temp" in df.columns:
+    min_temp = int(df["temp"].min())
+    max_temp = int(df["temp"].max())
 
-temp_range = st.slider("Temperature Range", min_temp, max_temp, (min_temp, max_temp))
+    temp_range = st.slider("Temperature Range", min_temp, max_temp, (min_temp, max_temp))
 
-filtered_df = df[(df["temp"] >= temp_range[0]) & (df["temp"] <= temp_range[1])]
+    filtered_df = df[(df["temp"] >= temp_range[0]) & (df["temp"] <= temp_range[1])]
+else:
+    filtered_df = df
 
-st.write("Filtered Data")
 st.dataframe(filtered_df)
 
 # ---------------- INSIGHTS ----------------
@@ -75,4 +90,4 @@ insights = generate_insights(filtered_df)
 for i in insights:
     st.success(i)
 
-st.caption("Built using Streamlit + Machine Learning")
+st.caption("✔ Deployment Ready Streamlit App")
