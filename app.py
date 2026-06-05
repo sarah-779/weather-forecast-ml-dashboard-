@@ -1,107 +1,78 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import joblib
-
 from utils import load_data, generate_insights
 from model import train_model
 
-# ✅ MUST BE FIRST STREAMLIT COMMAND
-st.set_page_config(page_title="Weather ML Dashboard", layout="wide")
+# MUST BE FIRST STREAMLIT COMMAND
+st.set_page_config(page_title="Weather ML App", layout="wide")
 
-# Load data
+# ---------------- LOAD DATA ----------------
 df = load_data("weather.csv")
 
-# Load or train model
+# safety check
+if "rain" not in df.columns:
+    st.error("Dataset must contain 'rain' column (0/1)")
+    st.stop()
+
+# ---------------- LOAD MODEL ----------------
 try:
     model = joblib.load("weather_model.pkl")
 except:
-    model = train_model()
+    model = train_model(df)
 
-st.title("🌦️ Weather Forecast ML Dashboard")
-st.markdown("Deep Analytics + Machine Learning Weather Prediction System")
+# ---------------- TITLE ----------------
+st.title("🌦️ Weather Prediction App")
+st.write("Simple ML model to predict rain/no rain")
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.header("Weather Input")
+# ---------------- SIDEBAR INPUT ----------------
+st.sidebar.header("Enter Weather Data")
 
-input_data = {}
-
-# safe feature input
 features = df.drop("rain", axis=1).columns
 
+user_input = {}
+
 for col in features:
-    input_data[col] = st.sidebar.number_input(col, value=float(df[col].mean()))
+    user_input[col] = st.sidebar.number_input(
+        col,
+        value=float(df[col].mean())
+    )
 
-input_df = pd.DataFrame([input_data])
+input_df = pd.DataFrame([user_input])
+input_df = input_df[features]
 
-# prediction
-if st.sidebar.button("Predict Rain"):
-    prediction = model.predict(input_df)[0]
+# ---------------- PREDICTION ----------------
+if st.sidebar.button("Predict"):
+    result = model.predict(input_df)[0]
 
-    if prediction == 1:
+    if result == 1:
         st.error("🌧️ Rain Expected")
     else:
         st.success("☀️ No Rain Expected")
 
+# ---------------- DATA VIEW ----------------
+st.subheader("Dataset Preview")
+st.dataframe(df.head())
+
 # ---------------- FILTER ----------------
-st.sidebar.header("Filters")
+st.subheader("Filter by Temperature")
 
 min_temp = int(df["temp"].min())
 max_temp = int(df["temp"].max())
 
-temp_range = st.sidebar.slider(
-    "Temperature Range",
-    min_temp,
-    max_temp,
-    (min_temp, max_temp)
-)
+temp_range = st.slider("Temperature Range", min_temp, max_temp, (min_temp, max_temp))
 
-filtered_df = df[
-    (df["temp"] >= temp_range[0]) &
-    (df["temp"] <= temp_range[1])
-]
+filtered_df = df[(df["temp"] >= temp_range[0]) & (df["temp"] <= temp_range[1])]
 
-# ---------------- TABS ----------------
-tab1, tab2, tab3 = st.tabs(["📊 Overview", "📈 Charts", "🧠 Insights"])
-
-# ---------------- OVERVIEW ----------------
-with tab1:
-    st.subheader("Dataset Overview")
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric("Records", len(filtered_df))
-    c2.metric("Avg Temp", round(filtered_df["temp"].mean(), 2))
-    c3.metric("Rain Cases", int(filtered_df["rain"].sum()))
-
-    st.dataframe(filtered_df.head())
-
-# ---------------- CHARTS ----------------
-with tab2:
-    st.subheader("Weather Analytics")
-
-    st.plotly_chart(
-        px.line(filtered_df, y="temp", title="Temperature Trend"),
-        use_container_width=True
-    )
-
-    st.plotly_chart(
-        px.bar(filtered_df, x="humidity", color="rain", title="Humidity vs Rain"),
-        use_container_width=True
-    )
-
-    st.plotly_chart(
-        px.scatter(filtered_df, x="temp", y="humidity", color="rain", title="Temp vs Humidity"),
-        use_container_width=True
-    )
+st.write("Filtered Data")
+st.dataframe(filtered_df)
 
 # ---------------- INSIGHTS ----------------
-with tab3:
-    st.subheader("AI Insights")
+st.subheader("AI Insights")
 
-    insights = generate_insights(filtered_df)
+insights = generate_insights(filtered_df)
 
-    for i in insights:
-        st.success(i)
+for i in insights:
+    st.success(i)
 
-    st.warning("This is for educational purposes only.")
+st.caption("Built using Streamlit + Machine Learning")
