@@ -10,20 +10,27 @@ st.set_page_config(page_title="Weather App", layout="wide")
 # ---------------- LOAD DATA ----------------
 df = load_data("weather.csv")
 
+# normalize column names
 df.columns = df.columns.str.strip().str.lower()
 
-# ---------------- CREATE TARGET SAFELY ----------------
-if "humidity" in df.columns:
-    base = df["humidity"]
-elif "hum" in df.columns:
-    base = df["hum"]
-elif "humidity(%)" in df.columns:
-    base = df["humidity(%)"]
-else:
-    st.error("No humidity column found")
-    st.stop()
+# ---------------- HANDLE HUMIDITY SAFELY ----------------
+humidity_col = None
 
-df["rain"] = (base > base.median()).astype(int)
+possible_humidity_cols = ["humidity", "hum", "humidity(%)", "rh"]
+
+for col in possible_humidity_cols:
+    if col in df.columns:
+        humidity_col = col
+        break
+
+# if no humidity column found → create fake one
+if humidity_col is None:
+    st.warning("No humidity column found. Creating synthetic humidity.")
+    df["humidity"] = df.select_dtypes(include="number").mean(axis=1)
+    humidity_col = "humidity"
+
+# ---------------- CREATE TARGET ----------------
+df["rain"] = (df[humidity_col] > df[humidity_col].median()).astype(int)
 
 # ---------------- MODEL ----------------
 try:
